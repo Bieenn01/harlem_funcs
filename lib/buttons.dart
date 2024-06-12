@@ -1,0 +1,181 @@
+import 'package:harlem/buttons_array.dart';
+import 'package:harlem/ftp_flutter.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+class WidgetButton extends StatefulWidget {
+  const WidgetButton({super.key});
+
+  @override
+  State<WidgetButton> createState() => _WidgetButtonState();
+}
+
+class _WidgetButtonState extends State<WidgetButton> {
+  // ignore: unused_field
+  late PermissionStatus _locationPermissionStatus = PermissionStatus.denied;
+  // ignore: unused_field
+  late PermissionStatus _cameraPermissionStatus = PermissionStatus.denied;
+  // ignore: unused_field
+  late PermissionStatus _readAndwritesPermissionStatus = PermissionStatus.denied;
+  final padding = EdgeInsets.all(10);
+  final centerPadding = EdgeInsets.all(25);
+
+    @override
+  void initState() {
+    super.initState();
+    _requestPermissions();
+  }
+
+    Future<void> _requestPermissions() async {
+    _locationPermissionStatus = await Permission.location.request();
+    _cameraPermissionStatus = await Permission.camera.request();  
+
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          backgroundColor: Colors.blue,
+          title: Text('Buttons Array'),
+        ),
+        body: Container(
+          color: Colors.black,
+          child: Center(
+            child: SingleChildScrollView(
+              child: Container(
+                width: 300,
+                margin: EdgeInsets.all(25),
+                padding: centerPadding,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                  width: 5,
+                  color: Color.fromARGB(255, 179, 153, 153)),
+                  color: Color.fromARGB(255, 230, 225, 225),
+                  borderRadius: BorderRadius.circular(10)),
+                  child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    //array: children of buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ArrayWidgetButtons())
+                            );
+                          },
+                          icon: Icon(Icons.data_array_outlined),
+                        ),
+                        Text('Array List')
+                      ]
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/qrscanner-default'
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                      backgroundColor:Color.fromARGB(255, 196, 218, 235)),
+                      icon: Icon(Icons.camera_alt_rounded),
+                      label: Text('Default Scanner'),
+                    ),
+                    Divider(),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/mysql-intergration'
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                      backgroundColor:Color.fromARGB(255, 196, 218, 235)),
+                      icon: Icon(Icons.donut_small_sharp),
+                      label: Text('MySQL Information Viewing'),
+                    ),
+                    Divider(),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/qrscanner-mysql'
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                      backgroundColor:Color.fromARGB(255, 196, 218, 235)),
+                      icon: const Icon(Icons.qr_code_scanner_rounded),
+                      label: const Text('MySQL Scanner Integration'),
+                    ),
+                    Divider(),
+                    ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => FTPServerWidget()),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                        backgroundColor:Color.fromARGB(255, 196, 218, 235)),
+                        icon: const Icon(Icons.drive_folder_upload_outlined),
+                        label: const Text('FTP Integration Flutter'),
+                      ),
+                    Divider(),
+                    ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/thermal-printer'
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                        backgroundColor:Color.fromARGB(255, 196, 218, 235)),
+                        icon: const Icon(Icons.print),
+                        label: Text('Thermal Printer Flutter'),
+                      ),
+                    Divider(),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/qr-generator'
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                      backgroundColor:Color.fromARGB(255, 196, 218, 235)),
+                      icon: const Icon(Icons.qr_code_2_rounded),
+                      label: Text('Qr Generator'),
+                    ),
+                    Divider(),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/pdf-viewer'
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                      backgroundColor:Color.fromARGB(255, 196, 218, 235)),
+                      icon: const Icon(Icons.picture_as_pdf),
+                      label: Text('View PDF'),
+                    ),
+                  ],
+                )
+              ),
+            ),
+          )
+        )
+      )
+    );
+  }
+}
