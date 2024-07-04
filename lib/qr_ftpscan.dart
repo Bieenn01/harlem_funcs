@@ -65,8 +65,7 @@ class _QrScannerFTPState extends State<QrScannerFTP> {
                         onScan: (String value) async {
                           debugPrint(value);
                           Position position =
-                              await Geolocator.getCurrentPosition(
-                                  desiredAccuracy: LocationAccuracy.high);
+                              await _determinePosition();
                           setState(() {
                             scannedText = value;
                             latitude = position.latitude.toString();
@@ -127,6 +126,7 @@ class _QrScannerFTPState extends State<QrScannerFTP> {
       }),
     );
   }
+
   void _insertDataIntoDatabase(
       String scannedText, String latitude, String longitude) async {
     try {
@@ -140,5 +140,30 @@ class _QrScannerFTPState extends State<QrScannerFTP> {
     } catch (e) {
       print("Error: $e");
     }
+  }
+
+  Future<Position> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw 'Location services are disabled.';
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw 'Location permissions are denied.';
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      throw 'Location permissions are permanently denied, we cannot request permissions.';
+    } 
+
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high);
   }
 }
