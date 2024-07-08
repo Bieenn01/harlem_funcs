@@ -1,0 +1,147 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
+import 'package:tflite_v2/tflite_v2.dart';
+
+List<CameraDescription> cameras = [];
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  cameras = await availableCameras();
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: ObjectDetectionScreen(),
+    );
+  }
+}
+
+class ObjectDetectionScreen extends StatefulWidget {
+  const ObjectDetectionScreen({Key? key}) : super(key: key);
+
+  @override
+  _ObjectDetectionScreenState createState() => _ObjectDetectionScreenState();
+}
+
+class _ObjectDetectionScreenState extends State<ObjectDetectionScreen> {
+  late CameraController _controller;
+  late Future<void> _initializeControllerFuture;
+  var _recognitions;
+  var v = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = CameraController(
+      cameras[0], 
+      ResolutionPreset.max,
+    );
+    _initializeControllerFuture = _controller.initialize().then((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {});
+    });
+    loadModel();
+  }
+
+  loadModel() async {
+    await Tflite.loadModel(
+      model: "assets/model_unquant.tflite",
+      labels: "assets/labels.txt",
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _runModelOnFrame(CameraImage cameraImage) async {
+    var recognitions = await Tflite.runModelOnFrame(
+      bytesList: cameraImage.planes.map((plane) => plane.bytes).toList(),
+      imageHeight: cameraImage.height,
+      imageWidth: cameraImage.width,
+      imageMean: 127.5,
+      imageStd: 127.5,
+      rotation: 90,
+      numResults: 2,
+      threshold: 0.1,
+      asynch: true,
+    );
+    setState(() {
+      _recognitions = recognitions;
+      v = recognitions.toString();
+    });
+    print(_recognitions);
+  }
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text(
+        'Object Detection ',
+        style: TextStyle(color: Colors.white),
+      ),
+      backgroundColor: Colors.deepPurple,
+    ),
+    body: SingleChildScrollView(
+      child: FutureBuilder<void>(
+        future: _initializeControllerFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return CameraPreview(_controller);
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+    ),
+    floatingActionButton: Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Column(
+          children: [
+            SingleChildScrollView(
+              child: Text(v)
+            )
+          ],
+        ),
+        FloatingActionButton(
+          onPressed: () async {
+            try {
+              await _initializeControllerFuture;
+              _controller.startImageStream((CameraImage cameraImage) {
+                _runModelOnFrame(cameraImage);
+              });
+            } catch (e) {
+              print('Error starting image stream: $e');
+            }
+          },
+          child: const Icon(Icons.camera),
+        ),
+        SizedBox(width: 10), // Adjust the spacing between buttons
+        FloatingActionButton(
+          onPressed: () {
+            _controller.stopImageStream();
+          },
+          child: const Icon(Icons.stop),
+        ),
+        
+      ],
+    ),
+  );
+}
+
+}
