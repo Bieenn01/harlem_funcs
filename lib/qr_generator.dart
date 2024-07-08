@@ -1,10 +1,11 @@
-import 'dart:io';
+import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui';
 
-import 'package:blue_thermal_printer/blue_thermal_printer.dart';
+import 'package:bluetooth_print/bluetooth_print_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:bluetooth_print/bluetooth_print.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class QRGenerator extends StatefulWidget {
@@ -16,7 +17,7 @@ class QRGenerator extends StatefulWidget {
 
 class _QRGeneratorState extends State<QRGenerator> {
   String data = "";
-  BlueThermalPrinter bluetooth = BlueThermalPrinter.instance;
+  BluetoothPrint bluetoothPrint = BluetoothPrint.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +81,7 @@ class _QRGeneratorState extends State<QRGenerator> {
                 vertical: 16.0,
               ),
               child: Text(
-                "Generate QR Code",
+                "Generate and Print QR Code",
               ),
             )
           ],
@@ -90,32 +91,55 @@ class _QRGeneratorState extends State<QRGenerator> {
   }
 
   Future<void> generateAndPrintQRCode() async {
-  try {
-    final qrImageData = await QrPainter(
-      data: data, 
-      version: QrVersions.auto,
-      gapless: false,
-      color: Colors.black,
-      emptyColor: Colors.white,
-    )
-    .toImageData(80.0); 
+    try {
+      // Generate QR code image data
+      final qrImageData = await QrPainter(
+        data: data,
+        version: QrVersions.auto,
+        gapless: false,
+        color: Colors.black,
+        emptyColor: Colors.white,
+      ).toImageData(300.0, format: ImageByteFormat.png);
 
-    return bluetooth.printImageBytes(qrImageData!.buffer.asUint8List());
+      if (qrImageData == null) {
+        print("Error: QR code image data is null");
+        return;
+      }
 
-      // direct print from QrCodeViewer
-      // await bluetooth.printQRcode(data,120,120,150);
-          
-      // ByteData bytesAsset = await rootBundle.load("assets/images/250by250.png");
-      // Uint8List imageBytesFromAsset = bytesAsset.buffer.asUint8List();
+      String base64Image = base64Encode(qrImageData.buffer.asUint8List());
 
-      // await bluetooth.printImageBytes(imageBytesFromAsset); 
+      if (base64Image.isEmpty) {
+        print("Error: Base64 conversion failed");
+        return;
+      }
 
+      Map<String, dynamic> config = {
+        'align': 'center',
+      };
+
+      List<LineText> lines = [
+        LineText(
+          type: LineText.TYPE_TEXT,
+          content: 'Scan this $data',
+          align: LineText.ALIGN_CENTER,
+        ),
+        LineText(
+          type: LineText.TYPE_IMAGE,
+          content: base64Image,
+          align: LineText.ALIGN_CENTER,
+          width: 80,
+          height: 80,
+        ),
+      ];
+
+      await bluetoothPrint.printReceipt(config, lines);
+      print("QR code printed successfully");
     } catch (e) {
-      print("Error printing QR code: $e");
-      rethrow;
+      print("Error generating and printing QR code: $e");
+      // Handle specific errors here if needed
+      rethrow; // Ensure the error propagates up for further analysis
     }
   }
-
 }
 
 class AppStyle {

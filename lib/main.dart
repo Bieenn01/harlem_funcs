@@ -6,12 +6,10 @@ import 'package:harlem/qr_ftpscan.dart';
 import 'package:harlem/qr_generator.dart';
 import 'package:harlem/qr_scanner.dart';
 import 'package:harlem/buttons.dart';
-import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:harlem/test.dart';
 import 'package:harlem/wireless_printer.dart';
 
 void main() {     
-  usePathUrlStrategy();
   runApp(const MyApp());
 }
 

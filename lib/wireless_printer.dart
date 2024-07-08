@@ -1,22 +1,21 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:bluetooth_print/bluetooth_print_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:blue_thermal_printer/blue_thermal_printer.dart';
+import 'package:bluetooth_print/bluetooth_print.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class FlutterThermalPrinter extends StatefulWidget {
   @override
-  _FlutterThermalPrinterState createState() => new _FlutterThermalPrinterState();
+  _FlutterThermalPrinterState createState() => _FlutterThermalPrinterState();
 }
 
 class _FlutterThermalPrinterState extends State<FlutterThermalPrinter> {
-  BlueThermalPrinter bluetooth = BlueThermalPrinter.instance;
+  BluetoothPrint bluetoothPrint = BluetoothPrint.instance;
 
-  List<BluetoothDevice> _devices = [];
+  String tips = 'no device connected';
   BluetoothDevice? _device;
   bool _connected = false;
   TextEditingController _textController = TextEditingController();
@@ -25,41 +24,34 @@ class _FlutterThermalPrinterState extends State<FlutterThermalPrinter> {
   @override
   void initState() {
     super.initState();
-    initPlatformState();
+    WidgetsBinding.instance!.addPostFrameCallback((_) => initBluetooth());
   }
 
-  Future<void> initPlatformState() async {
-    bool? isConnected = await bluetooth.isConnected;
-    List<BluetoothDevice> devices = [];
-    try {
-      devices = await bluetooth.getBondedDevices();
-    } on PlatformException {}
+  Future<void> initBluetooth() async {
+    bool isConnected = await bluetoothPrint.isConnected ?? false;
 
-    bluetooth.onStateChanged().listen((state) {
+    bluetoothPrint.state.listen((state) {
+      print('******************* cur device status: $state');
+
       switch (state) {
-        case BlueThermalPrinter.CONNECTED:
+        case BluetoothPrint.CONNECTED:
           setState(() {
             _connected = true;
-            Fluttertoast.showToast(msg: 'Connected to printer');
-            print("bluetooth device state: connected");
+            tips = 'connect success';
           });
           break;
-        case BlueThermalPrinter.DISCONNECTED:
+        case BluetoothPrint.DISCONNECTED:
           setState(() {
             _connected = false;
-            Fluttertoast.showToast(msg: 'Disconnected from printer');
-            print("bluetooth device state: disconnected");
+            tips = 'disconnect success';
           });
+          break;
+        default:
           break;
       }
     });
 
-    if (!mounted) return;
-    setState(() {
-      _devices = devices;
-    });
-
-    if (isConnected == true) {
+    if (isConnected) {
       setState(() {
         _connected = true;
       });
@@ -71,7 +63,7 @@ class _FlutterThermalPrinterState extends State<FlutterThermalPrinter> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Blue Thermal Printer'),
+          title: const Text('Bluetooth Thermal Printer'),
         ),
         body: Container(
           child: Padding(
@@ -95,11 +87,22 @@ class _FlutterThermalPrinterState extends State<FlutterThermalPrinter> {
                       width: 30,
                     ),
                     Expanded(
-                      child: DropdownButton(
-                        items: _getDeviceItems(),
-                        onChanged: (BluetoothDevice? value) =>
-                            setState(() => _device = value),
-                        value: _device,
+                      child: StreamBuilder<List<BluetoothDevice>>(
+                        stream: bluetoothPrint.scanResults,
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return Text('No devices found');
+                          }
+                          return DropdownButton<BluetoothDevice>(
+                            items: _getDeviceItems(snapshot.data!),
+                            onChanged: (BluetoothDevice? value) {
+                              setState(() {
+                                _device = value;
+                              });
+                            },
+                            value: _device,
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -112,9 +115,15 @@ class _FlutterThermalPrinterState extends State<FlutterThermalPrinter> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: <Widget>[
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.brown),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.brown,
+                      ),
                       onPressed: () {
-                        initPlatformState();
+                        setState(() {
+                          _device = null; // Reset selected device
+                        });
+                        bluetoothPrint.startScan(
+                            timeout: Duration(milliseconds: 500));
                       },
                       child: const Text(
                         'Refresh',
@@ -126,7 +135,8 @@ class _FlutterThermalPrinterState extends State<FlutterThermalPrinter> {
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: _connected ? Colors.red : Colors.green),
+                        backgroundColor: _connected ? Colors.red : Colors.green,
+                      ),
                       onPressed: _connected ? _disconnect : _connect,
                       child: Text(
                         _connected ? 'Disconnect' : 'Connect',
@@ -136,39 +146,40 @@ class _FlutterThermalPrinterState extends State<FlutterThermalPrinter> {
                   ],
                 ),
                 Padding(
-                  padding:
-                      const EdgeInsets.only(left: 10.0, right: 10.0, top: 50),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.brown),
-                    onPressed: () {
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: _textController,
+                    onSubmitted: (String value) {
                       if (_connected) {
-                        printText(_textController.text);
+                        // Prepare data for printReceipt method
+                        Map<String, dynamic> config = {
+                          'key1': 'value1',
+                          'key2': 'value2',
+                          // Add any configuration parameters needed
+                        };
+                        List<LineText> data = [
+                          LineText(
+                            type: LineText.TYPE_TEXT,
+                            content: value,
+                            weight: LineText.ALIGN_CENTER,
+                            align: LineText.ALIGN_LEFT,
+                            size: LineText.ALIGN_RIGHT,
+                            linefeed: 1,
+                          ),
+                          // You can add more LineText objects as needed
+                        ];
+
+                        printReceipt(config, data);
                       } else {
                         Fluttertoast.showToast(msg: 'Printer not connected');
                       }
                     },
-                    child: const Text('PRINT TEXT', style: TextStyle(color: Colors.white)),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    controller: _textController,
                     decoration: const InputDecoration(
-                      labelText: 'Enter Text',
+                      labelText: 'Enter Text and press Enter',
                       border: OutlineInputBorder(),
                     ),
                   ),
                 ),
-                // Padding(
-                //   padding: const EdgeInsets.all(8.0),
-                //   child: ElevatedButton(
-                //     style: ElevatedButton.styleFrom(backgroundColor: Colors.brown),
-                //     onPressed: _pickImage,
-                //     child: const Text('SELECT IMAGE', style: TextStyle(color: Colors.white)),
-                //   ),
-                // ),
-                // if (_imageBytes != null) Image.memory(_imageBytes!),
               ],
             ),
           ),
@@ -177,82 +188,60 @@ class _FlutterThermalPrinterState extends State<FlutterThermalPrinter> {
     );
   }
 
-  List<DropdownMenuItem<BluetoothDevice>> _getDeviceItems() {
+  List<DropdownMenuItem<BluetoothDevice>> _getDeviceItems(
+      List<BluetoothDevice> devices) {
     List<DropdownMenuItem<BluetoothDevice>> items = [];
-    items.add(const DropdownMenuItem(
+
+    items.add(DropdownMenuItem(
       value: null,
       child: Text('Please Select Device'),
     ));
 
-    // Add devices to the dropdown list
-    for (var device in _devices) {
+    for (var device in devices) {
       items.add(DropdownMenuItem(
         value: device,
         child: Text(device.name ?? ""),
       ));
     }
-
     return items;
   }
 
-  void _connect() {
+  void _connect() async {
     if (_device != null) {
-      bluetooth.isConnected.then((isConnected) {
-        if (isConnected == true) {
-          print('Already connected');
-          setState(() => _connected = true);
-        } else {
-          bluetooth.connect(_device!).then((value) {
-            setState(() => _connected = value);
-            if (_connected) {
-              Fluttertoast.showToast(msg: 'Connected to printer');
-            } else {
-              Fluttertoast.showToast(msg: 'Failed to connect to printer');
-            }
-          }).catchError((error) {
-            print('Error connecting: $error');
-            setState(() => _connected = false);
-            Fluttertoast.showToast(msg: 'Error connecting to printer');
-          });
+      PermissionStatus status = await Permission.bluetooth.status;
+      if (status != PermissionStatus.granted) {
+        status = await Permission.bluetooth.request();
+        if (status != PermissionStatus.granted) {
+          Fluttertoast.showToast(msg: 'Bluetooth permission denied');
+          return;
         }
-      });
+      }
+
+      try {
+        await bluetoothPrint.connect(_device!);
+      } catch (e) {
+        print('Error connecting: $e');
+        Fluttertoast.showToast(msg: 'Failed to connect to printer');
+      }
     } else {
       Fluttertoast.showToast(msg: 'No device selected');
     }
   }
 
   void _disconnect() {
-    bluetooth.disconnect();
+    bluetoothPrint.disconnect();
     setState(() => _connected = false);
   }
 
-  void printText(String text) {
-    if (_connected) {
-      bluetooth.printCustom(text, 1, 1);
-    } else {
-      Fluttertoast.showToast(msg: 'Printer not connected');
+  Future<void> printReceipt(
+      Map<String, dynamic> config, List<LineText> data) async {
+    try {
+      await bluetoothPrint.printReceipt(config, data);
+    } catch (e) {
+      print('Error printing receipt: $e');
+      Fluttertoast.showToast(msg: 'Failed to print receipt');
     }
   }
-
-//   Future<void> _pickImage() async {
-//     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-//     if (pickedFile != null) {
-//       final bytes = await pickedFile.readAsBytes();
-//       setState(() {
-//         _imageBytes = Uint8List.fromList(bytes);
-//       });
-//       _printImage(_imageBytes!);
-//     }
-//   }
-
-// void _printImage(Uint8List image) {
-//   if (_connected) {
-//     bluetooth.printImageBytes(image);
-//     Fluttertoast.showToast(msg: 'Image printed successfully');
-//   } else {
-//     Fluttertoast.showToast(msg: 'Printer not connected');
-//   }
-// }
 
   @override
   void dispose() {
