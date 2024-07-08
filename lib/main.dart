@@ -10,7 +10,8 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:harlem/test.dart';
 import 'package:harlem/wireless_printer.dart';
 
-void main() {     
+void main() async {     
+  WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   runApp(const MyApp());
 }

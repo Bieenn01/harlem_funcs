@@ -1,6 +1,8 @@
 PODS:
   - blue_thermal_printer (0.0.1):
     - Flutter
+  - bluetooth_print (0.0.1):
+    - Flutter
   - camera_avfoundation (0.0.1):
     - Flutter
   - device_info_plus (0.0.1):
@@ -127,6 +129,7 @@ PODS:
 
 DEPENDENCIES:
   - blue_thermal_printer (from `.symlinks/plugins/blue_thermal_printer/ios`)
+  - bluetooth_print (from `.symlinks/plugins/bluetooth_print/ios`)
   - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
@@ -164,6 +167,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   blue_thermal_printer:
     :path: ".symlinks/plugins/blue_thermal_printer/ios"
+  bluetooth_print:
+    :path: ".symlinks/plugins/bluetooth_print/ios"
   camera_avfoundation:
     :path: ".symlinks/plugins/camera_avfoundation/ios"
   device_info_plus:
@@ -193,6 +198,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   blue_thermal_printer: c83405103d2c17f8d67aaa43fcff94df5d616a66
+  bluetooth_print: da8f47e8881a0b1f0fd8d73cd6fa84c9bd41ac28
   camera_avfoundation: 759172d1a77ae7be0de08fc104cfb79738b8a59e
   device_info_plus: c6fb39579d0f423935b0c9ce7ee2f44b71b9fce6
   DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
