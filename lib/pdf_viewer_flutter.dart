@@ -54,7 +54,8 @@ class _PdfViewerFlutter extends State<PdfViewerFlutter> {
     }
     try {
       await ftpConnect.connect();
-      Uint8List? fileData = await ftpConnect.downloadDirectory(fileName, Directory('/storage/emulated/0/Download')) as Uint8List?;
+      Uint8List? fileData = await ftpConnect.downloadDirectory(
+          fileName, Directory('/storage/emulated/0/Download')) as Uint8List?;
       if (fileData != null) {
         await Navigator.push<dynamic>(
           context,
@@ -78,39 +79,40 @@ class _PdfViewerFlutter extends State<PdfViewerFlutter> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pdf Viewer Flutter'),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(
-              Icons.bookmark,
-              color: Colors.black,
-              semanticLabel: 'Bookmark',
+        appBar: AppBar(
+          title: const Text('Pdf Viewer Flutter'),
+          actions: <Widget>[
+            IconButton(
+              icon: const Icon(
+                Icons.bookmark,
+                color: Colors.black,
+                semanticLabel: 'Bookmark',
+              ),
+              onPressed: () {
+                _pdfViewerKey.currentState?.openBookmarkView();
+              },
             ),
-            onPressed: () {
-              _pdfViewerKey.currentState?.openBookmarkView();
-            },
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.wifi_tethering_rounded,
-              color: Colors.black,
-              semanticLabel: 'Print',
+            IconButton(
+              icon: const Icon(
+                Icons.wifi_tethering_rounded,
+                color: Colors.black,
+                semanticLabel: 'Print',
+              ),
+              onPressed: downloadAndPreviewPDF,
             ),
-            onPressed: downloadAndPreviewPDF,
-          ),
-        ],
-      ),
-      body: Center(
-        child: Card(
-          child: Row(
+          ],
+        ),
+        body: Center(
+          child: Card(
+              child: Row(
             children: [
               Column(
                 children: [
                   ElevatedButton.icon(
                     onPressed: () async {
                       try {
-                        FilePickerResult? result = await FilePicker.platform.pickFiles(
+                        FilePickerResult? result =
+                            await FilePicker.platform.pickFiles(
                           type: FileType.custom,
                           allowedExtensions: ['pdf'],
                         );
@@ -130,7 +132,7 @@ class _PdfViewerFlutter extends State<PdfViewerFlutter> {
                           );
                         } else {
                           showToast('Error: No file selected.');
-                        } 
+                        }
                       } catch (e) {
                         showToast('Error picking file: $e');
                       }
@@ -141,7 +143,9 @@ class _PdfViewerFlutter extends State<PdfViewerFlutter> {
                   ElevatedButton.icon(
                     onPressed: () async {
                       Navigator.push(
-                        context, MaterialPageRoute(builder: (context) =>  ImageConverter()));
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => ImageConverter()));
                     },
                     icon: Icon(Icons.image_outlined),
                     label: Text('Image to PDF'),
@@ -149,13 +153,11 @@ class _PdfViewerFlutter extends State<PdfViewerFlutter> {
                 ],
               ),
             ],
-          )
-        ),
-      )
-    );
+          )),
+        ));
   }
-  
-    void showToast(String message) {
+
+  void showToast(String message) {
     Fluttertoast.showToast(
       msg: message,
       toastLength: Toast.LENGTH_SHORT,

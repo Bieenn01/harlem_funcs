@@ -1,0 +1,1 @@
+ftp://rsa-key-20240823@34.87.7.115/ -hostkey="ssh-ed25519 255 SsHY8LkVx5d6wn7HbRGhC66DLeVlcW5enXKmtHfgcZ8" -privatekey="C:\Users\dexter-home 1\Downloads\private-082324.ppk"
