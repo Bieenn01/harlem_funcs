@@ -1,4 +1,4 @@
-package com.example.harlem
+package com.bien.harlem.app
 
 import io.flutter.embedding.android.FlutterActivity
 

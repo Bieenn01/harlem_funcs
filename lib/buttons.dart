@@ -45,7 +45,7 @@ class _WidgetButtonState extends State<WidgetButton> {
           child: Center(
             child: SingleChildScrollView(
               child: AspectRatio(
-                aspectRatio: 2 / 3,
+                aspectRatio: 4 / 3,
                 child: Container(
                   padding: EdgeInsets.all(10),
                   decoration: BoxDecoration(
