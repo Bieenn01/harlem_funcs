@@ -128,9 +128,10 @@ class FTPServer extends ChangeNotifier {
       await ftpConnect!.uploadFile(File(pickedImage.path));
       ftpConnect?.listDirectoryContent();
       showToast('FTP Log: Image uploaded successfully.');
-    
+
       if (result != null) {
-        for (String? pickedImage in result!.paths.where((path) => path != null)) {
+        for (String? pickedImage
+            in result!.paths.where((path) => path != null)) {
           await ftpConnect!.uploadFile(File(pickedImage!));
           ftpConnect?.listDirectoryContent();
         }
